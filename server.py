@@ -39,6 +39,13 @@ def handle_client(client_socket, clients, client_names):
                     elif message.strip() == "@names":
                         connected_users = ", ".join(client_names.values())
                         client_socket.sendall(f"[Connected users: {connected_users}]".encode('utf-8'))
+                    elif message.startswith("@"):
+                        recipient, msg_content = message.split(" ", 1)
+                        recipient = recipient[1:]  
+                        for client_sock, name in client_names.items():
+                            if name == recipient:
+                                client_sock.sendall(f"[{username} (private)]: {msg_content}".encode('utf-8'))
+                                break
                     else:
                         formatted_message = f"[{username}:] {message}"
                         # Broadcast message to all clients
