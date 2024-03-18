@@ -36,11 +36,15 @@ def handle_client(client_socket, clients, client_names):
                 if message:
                     if message.strip() == "@quit":
                         break
-                    formatted_message = f"[{username}:] {message}"
-                    # Broadcast message to all clients
-                    for client in clients:
-                        if client != client_socket:
-                            client.sendall(formatted_message.encode('utf-8'))
+                    elif message.strip() == "@names":
+                        connected_users = ", ".join(client_names.values())
+                        client_socket.sendall(f"[Connected users: {connected_users}]".encode('utf-8'))
+                    else:
+                        formatted_message = f"[{username}:] {message}"
+                        # Broadcast message to all clients
+                        for client in clients:
+                            if client != client_socket:
+                                client.sendall(formatted_message.encode('utf-8'))
 
             except Exception as e:
                 print(f"Error receiving message from client: {e}")
