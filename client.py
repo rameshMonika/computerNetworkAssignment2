@@ -58,7 +58,10 @@ def main():
     # Loop to send messages to the server
     while True:
         message = input()
-        client_socket.sendall(message.encode('utf-8'))
+        if message.startswith("@group set"):
+            client_socket.sendall(message.encode('utf-8'))
+        else:
+            client_socket.sendall(message.encode('utf-8'))
 
     # Close the client socket when the loop breaks
     client_socket.close()

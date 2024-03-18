@@ -4,8 +4,23 @@
 import socket
 import threading
 
+# Add this function to handle group creation command
+def create_group(client_socket, group_name, members, groups):
+    print("==================== in create group()=======")
+    # Check if the group name is valid
+    if not group_name.isalnum():
+        client_socket.sendall("[Group name must contain only alphanumeric characters and be in one word.]".encode('utf-8'))
+        return
+
+    # Create the group with the provided members
+    groups[group_name] = members
+    client_socket.sendall(f"[Group '{group_name}' created with members: {', '.join(members)}]".encode('utf-8'))
+
+
+
+
 # Function to handle client connections
-def handle_client(client_socket, clients, client_names):
+def handle_client(client_socket, clients, client_names,groups):
     try:
         # Send initial prompt to the client and receive their username
         client_socket.sendall(" ".encode('utf-8'))
@@ -42,6 +57,15 @@ def handle_client(client_socket, clients, client_names):
                     elif message.strip() == "@names":
                         connected_users = ", ".join(client_names.values())
                         client_socket.sendall(f"[Connected users: {connected_users}]".encode('utf-8'))
+                    elif message.startswith("@group set"):
+                        parts = message.split(" ")
+                        if len(parts) >= 5:
+                            group_name = parts[2]
+                            members = [part.strip() for part in parts[3:]]
+                            create_group(client_socket, group_name, members, groups)
+                        else:
+                            client_socket.sendall("[Invalid group creation command. Usage: @group set group_name member1, member2, ...]".encode('utf-8'))
+
                     # Check if the message is a personal message
                     elif message.startswith("@"):
                         recipient, msg_content = message.split(" ", 1)
@@ -91,6 +115,7 @@ def main():
 
     clients = []
     client_names = {}
+    groups={}
 
     # Accept and handle incoming client connections
     while True:
@@ -102,7 +127,7 @@ def main():
         clients.append(client_socket)
 
         # Create thread to handle client
-        client_thread = threading.Thread(target=handle_client, args=(client_socket, clients, client_names))
+        client_thread = threading.Thread(target=handle_client, args=(client_socket, clients, client_names,groups))
         client_thread.start()
 
     server_socket.close()
