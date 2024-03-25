@@ -6,7 +6,7 @@ import threading
 
 # Add this function to handle group creation command
 def create_group(client_socket, group_name, members, groups,client_names):
-    print("==================== in create group()=======")
+    
     # Check if the group name is valid
     if not group_name.isalnum():
         client_socket.sendall("[Group name must contain only alphanumeric characters and be in one word.]".encode('utf-8'))
@@ -97,16 +97,11 @@ def handle_client(client_socket, clients, client_names,groups):
                         if len(parts) == 4:
                             group_name = parts[2]
                             msg_content = parts[3]
-                            if group_name in groups:
-                                print("group name is in groups")
-                                
-                                print(groups[group_name])
-                            #groups[group_name] has ',' at the end of each member name remove it
+                           
                             for i in range(len(groups[group_name])):
                                 if groups[group_name][i][-1] == ',':
                                     groups[group_name][i] = groups[group_name][i][:-1]
-                            if username in groups[group_name]:
-                                print("username is in groups")
+                       
                             if group_name in groups and username in groups[group_name]:
                                 
                                 # Send message to all members of the group
@@ -122,6 +117,41 @@ def handle_client(client_socket, clients, client_names,groups):
                                 client_socket.sendall("[You are not a member of this group or the group does not exist.]".encode('utf-8'))
                         else:
                             client_socket.sendall("[Invalid group send command. Usage: @group send group_name message]".encode('utf-8'))
+                      #@group delete ggg” delete group ggg should only be deleted by members of the group
+                    elif message.startswith("@group delete"):
+                        
+                        parts = message.split(" ")
+                        if len(parts) == 3:
+                            group_name = parts[2]
+                             #groups[group_name] has ',' at the end of each member name remove it
+                            for i in range(len(groups[group_name])):
+                                if groups[group_name][i][-1] == ',':
+                                    groups[group_name][i] = groups[group_name][i][:-1]
+                            if group_name in groups and username in groups[group_name]:
+                                del groups[group_name]
+                                client_socket.sendall(f"[Group '{group_name}' deleted.]".encode('utf-8'))
+                            else:
+                                client_socket.sendall("[You are not a member of this group or the group does not exist.]".encode('utf-8'))
+                        else:
+                            client_socket.sendall("[Invalid group delete command. Usage: @group delete group_name]".encode('utf-8'))
+                    #@group leave ggg remove the member from the group ggg
+                    elif message.startswith("@group leave"):
+                        parts = message.split(" ")
+                        if len(parts) == 3:
+                            group_name = parts[2]
+                            #groups[group_name] has ',' at the end of each member name remove it
+                            for i in range(len(groups[group_name])):
+                                if groups[group_name][i][-1] == ',':
+                                    groups[group_name][i] = groups[group_name][i][:-1]
+                            if group_name in groups and username in groups[group_name]:
+                                groups[group_name].remove(username)
+                                client_socket.sendall(f"[You have left group '{group_name}']".encode('utf-8'))
+                            else:
+                                client_socket.sendall("[You are not a member of this group or the group does not exist.]".encode('utf-8'))
+                        else:
+                            client_socket.sendall("[Invalid group leave command. Usage: @group leave group_name]".encode('utf-8'))
+                    
+
                     # Check if the message is a personal message
                     elif message.startswith("@"):
                         recipient, msg_content = message.split(" ", 1)
@@ -130,6 +160,7 @@ def handle_client(client_socket, clients, client_names,groups):
                             if name == recipient:
                                 client_sock.sendall(f"[{username} (private)]: {msg_content}".encode('utf-8'))
                                 break
+                 
                     else:
                         # Format and broadcast message to all clients
                         formatted_message = f"[{username}:] {message}"
