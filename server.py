@@ -5,7 +5,7 @@ import socket
 import threading
 
 # Add this function to handle group creation command
-def create_group(client_socket, group_name, members, groups):
+def create_group(client_socket, group_name, members, groups,client_names):
     print("==================== in create group()=======")
     # Check if the group name is valid
     if not group_name.isalnum():
@@ -14,8 +14,30 @@ def create_group(client_socket, group_name, members, groups):
 
     # Create the group with the provided members
     groups[group_name] = members
-    client_socket.sendall(f"[Group '{group_name}' created with members: {', '.join(members)}]".encode('utf-8'))
+   
 
+  
+
+    client_socket.sendall(f"[Group '{group_name}' created with members: {' '.join(members)}]".encode('utf-8'))
+
+    # Notify each member of the group
+   
+
+    for member in members:
+         # except for the last member every other member has a , at the end remove it
+        if member[-1] == ',':  
+             member = member[:-1]
+            
+      
+        if member in client_names.values():
+           
+            for client_sock, name in client_names.items():
+                if name == member:
+                    client_sock.sendall(f"[You have been added to the group '{group_name}']".encode('utf-8'))
+                    break
+
+    
+    
        
 
 
@@ -51,6 +73,8 @@ def handle_client(client_socket, clients, client_names,groups):
         while True:
             try:
                 # Receive message from client
+                
+                
                 message = client_socket.recv(1024).decode('utf-8')
                 if message:
                     # Check if the message is to quit
@@ -65,10 +89,39 @@ def handle_client(client_socket, clients, client_names,groups):
                         if len(parts) >= 5:
                             group_name = parts[2]
                             members = [part.strip() for part in parts[3:]]
-                            create_group(client_socket, group_name, members, groups)
+                            create_group(client_socket, group_name, members, groups,client_names)
                         else:
                             client_socket.sendall("[Invalid group creation command. Usage: @group set group_name member1, member2, ...]".encode('utf-8'))
+                    elif message.startswith("@group send"):
+                        parts = message.split(" ", 3)
+                        if len(parts) == 4:
+                            group_name = parts[2]
+                            msg_content = parts[3]
+                            if group_name in groups:
+                                print("group name is in groups")
+                                
+                                print(groups[group_name])
+                            #groups[group_name] has ',' at the end of each member name remove it
+                            for i in range(len(groups[group_name])):
+                                if groups[group_name][i][-1] == ',':
+                                    groups[group_name][i] = groups[group_name][i][:-1]
+                            if username in groups[group_name]:
+                                print("username is in groups")
+                            if group_name in groups and username in groups[group_name]:
+                                
+                                # Send message to all members of the group
+                                for client_sock, name in client_names.items():
+                                    if name in groups[group_name]:
+                                        # the name should be name of the sender
+                                        if name == username:
+                                            client_sock.sendall(f"[{group_name} to {name}]: {msg_content}".encode('utf-8'))
+                                        else:
 
+                                            client_sock.sendall(f"[{group_name} from {username}]: {msg_content}".encode('utf-8'))
+                            else:
+                                client_socket.sendall("[You are not a member of this group or the group does not exist.]".encode('utf-8'))
+                        else:
+                            client_socket.sendall("[Invalid group send command. Usage: @group send group_name message]".encode('utf-8'))
                     # Check if the message is a personal message
                     elif message.startswith("@"):
                         recipient, msg_content = message.split(" ", 1)
