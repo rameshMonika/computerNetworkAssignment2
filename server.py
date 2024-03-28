@@ -109,7 +109,7 @@ def handle_client(client_socket, clients, client_names,groups):
                                     if name in groups[group_name]:
                                         # the name should be name of the sender
                                         if name == username:
-                                            client_sock.sendall(f"[{group_name} to {name}]: {msg_content}".encode('utf-8'))
+                                            client_sock.sendall(f"[ {name} to {group_name} ]: {msg_content}".encode('utf-8'))
                                         else:
 
                                             client_sock.sendall(f"[{group_name} from {username}]: {msg_content}".encode('utf-8'))
